@@ -94,6 +94,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     const adaptiveModels = new Set(["claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-4-6", "claude-mythos-preview"]);
     if (translatedBody.thinking?.type === "adaptive" && !adaptiveModels.has(model)) {
       translatedBody.thinking = { ...translatedBody.thinking, type: "enabled", budget_tokens: translatedBody.thinking.budget_tokens || 10000 };
+      if (translatedBody.output_config?.effort) delete translatedBody.output_config.effort;
     } else if (translatedBody.thinking?.type === "enabled" && model === "claude-opus-4-7") {
       const { budget_tokens, ...rest } = translatedBody.thinking;
       translatedBody.thinking = { ...rest, type: "adaptive" };

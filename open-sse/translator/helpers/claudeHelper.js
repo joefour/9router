@@ -115,6 +115,9 @@ export function prepareClaudeRequest(body, provider = null, apiKey = null, conne
   if (body.thinking) {
     if (body.thinking.type === "adaptive" && !modelSupportsAdaptiveThinking(model)) {
       body.thinking = { ...body.thinking, type: "enabled", budget_tokens: body.thinking.budget_tokens || 10000 };
+      // effort param only valid with adaptive thinking — strip it
+      if (body.output_config?.effort) delete body.output_config.effort;
+      if (body.output_config && Object.keys(body.output_config).length === 0) delete body.output_config;
     } else if (body.thinking.type === "enabled" && model === "claude-opus-4-7") {
       const { budget_tokens, ...rest } = body.thinking;
       body.thinking = { ...rest, type: "adaptive" };
