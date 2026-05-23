@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "Bash(git remote *)",
+      "Bash(rtk git *)",
+      "Bash(git merge *)",
+      "Bash(rtk grep *)",
+      "Bash(rtk ls *)",
+      "Bash(rtk jest *)",
+      "Bash(node --experimental-vm-modules node_modules/.bin/jest tests/unit/openai-to-claude.test.js --no-coverage)",
+      "Bash(rtk vitest *)",
+      "Bash(rtk proxy *)"
+    ]
+  }
+}

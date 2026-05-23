@@ -90,6 +90,14 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   if (passthrough) {
     log?.debug?.("PASSTHROUGH", `${clientTool} → ${provider} | native lossless`);
     translatedBody = { ...body, model };
+    // Normalize thinking type for model compatibility
+    const adaptiveModels = new Set(["claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-4-6", "claude-mythos-preview"]);
+    if (translatedBody.thinking?.type === "adaptive" && !adaptiveModels.has(model)) {
+      translatedBody.thinking = { ...translatedBody.thinking, type: "enabled", budget_tokens: translatedBody.thinking.budget_tokens || 10000 };
+    } else if (translatedBody.thinking?.type === "enabled" && model === "claude-opus-4-7") {
+      const { budget_tokens, ...rest } = translatedBody.thinking;
+      translatedBody.thinking = { ...rest, type: "adaptive" };
+    }
   } else {
     translatedBody = translateRequest(sourceFormat, targetFormat, model, body, stream, credentials, provider, reqLogger, stripList, connectionId, clientTool);
     if (!translatedBody) {

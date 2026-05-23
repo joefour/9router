@@ -77,17 +77,48 @@ export function fixToolUseOrdering(messages) {
 
 const CLAUDE_FORMAT_PROVIDERS_WITHOUT_OUTPUT_CONFIG = new Set(["minimax", "minimax-cn"]);
 
+// Check if a model supports the "adaptive" thinking type
+// Adaptive thinking is ONLY supported on:
+// - Claude Opus 4.7 (claude-opus-4-7)
+// - Claude Opus 4.6 (claude-opus-4-6)
+// - Claude Sonnet 4.6 (claude-sonnet-4-6)
+// - Claude Mythos Preview (claude-mythos-preview)
+// All other models (Sonnet 4.5, Opus 4.5, Haiku 4.x, Claude 3.x, etc.) don't support adaptive
+function modelSupportsAdaptiveThinking(model) {
+  if (!model) return false;
+  const m = model.toLowerCase();
+  // Models that support adaptive thinking
+  if (m === "claude-opus-4-7") return true;
+  if (m === "claude-opus-4-6") return true;
+  if (m === "claude-sonnet-4-6") return true;
+  if (m === "claude-mythos-preview") return true;
+  // Older models don't support adaptive
+  return false;
+}
+
 // Prepare request for Claude format endpoints
 // - Cleanup cache_control
 // - Filter empty messages
-// - Add thinking block for Anthropic endpoint (provider === "claude")
+// - Normalize adaptive thinking for unsupported models
 // - Fix tool_use/tool_result ordering
 // - Apply cloaking (billing header + fake user ID) for OAuth tokens
-export function prepareClaudeRequest(body, provider = null, apiKey = null, connectionId = null) {
+export function prepareClaudeRequest(body, provider = null, apiKey = null, connectionId = null, model = null) {
   // MiniMax exposes a Claude-compatible endpoint but rejects Anthropic's extended
   // structured output parameter with a generic 400 "invalid params" response.
   if (CLAUDE_FORMAT_PROVIDERS_WITHOUT_OUTPUT_CONFIG.has(provider)) {
     delete body.output_config;
+  }
+
+  // Normalize thinking type for model compatibility
+  // - Adaptive → enabled: for models that don't support adaptive thinking
+  // - Enabled → adaptive: for Opus 4.7 which only accepts adaptive
+  if (body.thinking) {
+    if (body.thinking.type === "adaptive" && !modelSupportsAdaptiveThinking(model)) {
+      body.thinking = { ...body.thinking, type: "enabled", budget_tokens: body.thinking.budget_tokens || 10000 };
+    } else if (body.thinking.type === "enabled" && model === "claude-opus-4-7") {
+      const { budget_tokens, ...rest } = body.thinking;
+      body.thinking = { ...rest, type: "adaptive" };
+    }
   }
 
   // 1. System: remove all cache_control, add only to last block with ttl 1h
