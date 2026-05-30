@@ -384,6 +384,35 @@ export class CodexExecutor extends BaseExecutor {
     // Ensure streaming is enabled (Codex API requires it)
     body.stream = true;
 
+    // Extract system messages from input[] and merge into instructions field
+    // Codex does not accept role=system in input[], only via the instructions field
+    if (Array.isArray(body.input)) {
+      const systemItems = body.input.filter(item => item.role === "system");
+      if (systemItems.length > 0) {
+        body.input = body.input.filter(item => item.role !== "system");
+        const systemText = systemItems.map(item => {
+          if (typeof item.content === "string") return item.content;
+          if (Array.isArray(item.content)) return item.content.map(c => c.text || c.output || "").filter(Boolean).join("\n");
+          return "";
+        }).filter(Boolean).join("\n\n");
+        // Prepend to existing instructions (if any), or set new
+        body.instructions = body.instructions
+          ? `${systemText}\n\n${body.instructions}`
+          : systemText;
+      }
+
+      // Normalize content type for assistant messages:
+      // Codex only accepts "output_text" (not "input_text") for role=assistant
+      for (const item of body.input) {
+        if (item.role === "assistant" && Array.isArray(item.content)) {
+          item.content = item.content.map(c => {
+            if (c.type === "input_text") return { ...c, type: "output_text" };
+            return c;
+          });
+        }
+      }
+    }
+
     // If no instructions provided, inject default Codex instructions
     if (!body.instructions || body.instructions.trim() === "") {
       body.instructions = CODEX_DEFAULT_INSTRUCTIONS;
@@ -445,6 +474,7 @@ export class CodexExecutor extends BaseExecutor {
     delete body.stream_options; // Cursor sends this but Codex doesn't support it
     delete body.safety_identifier; // Droid CLI sends this but Codex doesn't support it
     delete body.previous_response_id; // store=false → backend can't resolve previous resp; avoid 404
+    delete body.background; // n8n/Responses API sends this but Codex doesn't support it
 
     // Final allowlist filter — strip any unknown field that could trigger upstream "routing_unsupported"
     for (const k of Object.keys(body)) {

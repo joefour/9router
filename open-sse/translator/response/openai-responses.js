@@ -428,6 +428,7 @@ export function openaiResponsesToOpenAIResponse(chunk, state) {
     state.created = Math.floor(Date.now() / 1000);
     state.toolCallIndex = 0;
     state.currentToolCallId = null;
+    state.firstContentSent = false; // Track to send role: "assistant" in first delta chunk
   }
 
   // Text content delta
@@ -442,7 +443,10 @@ export function openaiResponsesToOpenAIResponse(chunk, state) {
       model: state.model || "unknown",
       choices: [{
         index: 0,
-        delta: { content: delta },
+        delta: Object.assign(
+          !state.firstContentSent ? (state.firstContentSent = true, { role: "assistant" }) : {},
+          { content: delta }
+        ),
         finish_reason: null
       }]
     };
@@ -465,17 +469,20 @@ export function openaiResponsesToOpenAIResponse(chunk, state) {
       model: state.model || "unknown",
       choices: [{
         index: 0,
-        delta: {
-          tool_calls: [{
-            index: state.toolCallIndex,
-            id: state.currentToolCallId,
-            type: "function",
-            function: {
-              name: item.name || "",
-              arguments: ""
-            }
-          }]
-        },
+        delta: Object.assign(
+          !state.firstContentSent ? (state.firstContentSent = true, { role: "assistant", content: null }) : {},
+          {
+            tool_calls: [{
+              index: state.toolCallIndex,
+              id: state.currentToolCallId,
+              type: "function",
+              function: {
+                name: item.name || "",
+                arguments: ""
+              }
+            }]
+          }
+        ),
         finish_reason: null
       }]
     };
