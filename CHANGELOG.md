@@ -2,6 +2,7 @@
 
 ## Fixes
 - Anthropic-compatible providers: strip Claude Code `context_management` before forwarding to gateways that reject unknown top-level fields (#1468)
+- Codex: include ChatGPT account context and relative reset parsing when loading Plus/Pro usage limits (#1407)
 
 # v0.4.63 (2026-05-26)
 
