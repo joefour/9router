@@ -32,6 +32,7 @@
 ## Fixes
 - OAuth: fix login flow on Windows
 - Messages API: keep `/v1/messages` non-streaming responses as JSON unless the client explicitly requests SSE (#1396)
+- Responses API: preserve Codex `apply_patch` as a custom tool call instead of JSON function-call arguments (#1371)
 
 # v0.4.58 (2026-05-21)
 
