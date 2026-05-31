@@ -452,6 +452,7 @@ export const PROVIDER_MODELS = {
     { id: "Qwen/Qwen3.6-Max-Preview", name: "Qwen 3.6 Max Preview" },
     { id: "Qwen/Qwen3.6-Plus", name: "Qwen 3.6 Plus" },
     { id: "stepfun/Step-3.5-Flash", name: "Step 3.5 Flash" },
+    { id: "Qwen/Qwen3.7-Max", name: "Qwen 3.7 Max" },
   ],
   groq: [
     { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B" },

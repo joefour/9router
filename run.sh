@@ -31,6 +31,7 @@ fi
 echo -e "${CYAN}Starting server on port ${PORT}...${NC}"
 PORT=${PORT} HOSTNAME=${HOST} nohup npm run start > /dev/null 2>&1 &
 SERVER_PID=$!
+disown
 echo "Server PID: ${SERVER_PID}"
 
 # Wait for server to be ready
@@ -46,7 +47,8 @@ done
 
 # --- Start tray (bypass CLI — no standalone build needed) ---
 echo -e "${CYAN}Launching system tray...${NC}"
-node -e "
+TRAY_LOG="${SCRIPT_DIR}/tray.log"
+nohup node -e "
   process.env.TRAY_MODE = '1';
   process.on('SIGHUP', () => {});
   const { initTray } = require('${SCRIPT_DIR}/cli/src/cli/tray/tray');
@@ -58,5 +60,9 @@ node -e "
       exec('open http://localhost:${PORT}/dashboard');
     }
   });
-  console.log('Tray icon active. Close this terminal when ready.');
-"
+  console.log('Tray icon active.');
+" > "$TRAY_LOG" 2>&1 &
+disown
+
+echo -e "${GREEN}Tray icon active. You can safely close this terminal.${NC}"
+echo -e "  Server PID: ${SERVER_PID} | Tray log: ${TRAY_LOG}"

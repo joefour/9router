@@ -125,6 +125,22 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
       const { budget_tokens, ...rest } = translatedBody.thinking;
       translatedBody.thinking = { ...rest, type: "adaptive" };
     }
+    // Extract role:"system" from messages → top-level body.system for Claude-format targets.
+    // Claude API rejects role:"system" inside messages; system must be a top-level field.
+    if (targetFormat === FORMATS.CLAUDE && Array.isArray(translatedBody.messages)) {
+      const systemMsgs = translatedBody.messages.filter(m => m.role === "system");
+      if (systemMsgs.length > 0) {
+        const systemTexts = systemMsgs.map(m => typeof m.content === "string" ? m.content : (Array.isArray(m.content) ? m.content.filter(c => c.type === "text").map(c => c.text).join("\n") : ""));
+        translatedBody.messages = translatedBody.messages.filter(m => m.role !== "system");
+        if (Array.isArray(translatedBody.system)) {
+          translatedBody.system = [...translatedBody.system, ...systemTexts.map(t => ({ type: "text", text: t }))];
+        } else if (typeof translatedBody.system === "string") {
+          translatedBody.system = [{ type: "text", text: translatedBody.system }, ...systemTexts.map(t => ({ type: "text", text: t }))];
+        } else {
+          translatedBody.system = systemTexts.map(t => ({ type: "text", text: t }));
+        }
+      }
+    }
   } else {
     translatedBody = translateRequest(sourceFormat, targetFormat, model, body, stream, credentials, provider, reqLogger, stripList, connectionId, clientTool);
     if (!translatedBody) {
